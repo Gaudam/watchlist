@@ -6,276 +6,1361 @@
     <title>Mijn Film & Serie Kijklijst</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
-    
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
-        body {
-            background-color: #111827; /* gray-900 */
-            color: #e5e7eb; /* gray-200 */
-            font-family: sans-serif;
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar {
+            width: 8px;
         }
-        .lucide-icon {
-            display: inline-block;
-            width: 1.25rem;
-            height: 1.25rem;
-            stroke-width: 2;
+        ::-webkit-scrollbar-track {
+            background: #1f2937; /* gray-800 */
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563; /* gray-600 */
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280; /* gray-500 */
+        }
+        /* Style for the file input button */
+        input[type="file"] {
+            display: none;
+        }
+        /* Simple transition for modals and sections */
+        .collapsible-section {
+            transition: max-height 0.5s ease-in-out, opacity 0.5s ease-in-out;
+            overflow: hidden;
+            max-height: 4000px; /* Increased height */
+            opacity: 1;
+        }
+        .collapsible-section.hidden {
+            max-height: 0;
+            opacity: 0;
+        }
+        .modal-transition {
+            transition: opacity 0.25s ease, transform 0.25s ease;
+        }
+        .modal-hidden {
+            opacity: 0;
+            transform: scale(0.95);
+            pointer-events: none;
+        }
+        .modal-visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        /* --- View Styles --- */
+        .list-item {
+             margin-bottom: 0.25rem; /* Reduced margin */
+        }
+        /* Default List View (Small Icons) */
+        .view-list .list-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.5rem;
+        }
+        .view-list .list-item-image {
+            width: 4rem; /* 64px */
+            height: auto;
+            flex-shrink: 0;
+        }
+        .view-list .list-item-content {
+            padding: 0;
+        }
+
+        /* Grid View (Large Icons) */
+        .view-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 0.75rem;
+        }
+        .view-grid .list-item {
+            display: flex;
+            flex-direction: column;
+            background-color: #1f2937; /* gray-800 */
+            overflow: hidden;
+            transition: transform 0.2s ease-in-out;
+        }
+        .view-grid .list-item:hover {
+            transform: scale(1.03);
+        }
+        .view-grid .list-item-image {
+            width: 100%;
+            height: auto;
+        }
+        .view-grid .list-item-content {
+            padding: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+        .view-grid .list-item-details {
+            flex-grow: 1;
+        }
+        .view-grid .list-item-actions {
+            margin-top: 0.5rem;
+            justify-content: space-around;
+        }
+
+        /* Compact List View */
+        .view-compact .list-item {
+            display: flex;
+            align-items: center;
+        }
+        .view-compact .list-item-image {
+            display: none;
+        }
+        .view-compact .list-item-content {
+             padding: 0.25rem 0.75rem;
+        }
+        .view-compact .list-item-details {
+            flex-grow: 1;
+        }
+        .view-compact .list-item-actions {
+            flex-shrink: 0;
+        }
+        
+        /* Scrollable search results */
+        #search-results-container {
+            max-height: 75vh;
+            overflow-y: auto;
+            padding-right: 1rem;
         }
     </style>
 </head>
-<body class="bg-gray-900">
+<body class="bg-gray-900 text-gray-200 font-sans">
 
+    <!-- Container -->
     <div class="container mx-auto p-4 sm:p-6 lg:p-8">
         <header class="text-center mb-8">
             <h1 class="text-4xl sm:text-5xl font-extrabold text-white tracking-tight">
                 Mijn Kijklijst
             </h1>
-            <p class="text-gray-400 mt-2 text-lg">Zoek, bewaar en beoordeel je favoriete films en series.</p>
+            <br>
         </header>
 
         <main>
-            <section id="search-section" class="max-w-2xl mx-auto mb-10">
-                <div class="flex gap-2 p-2 bg-gray-800 rounded-lg shadow-lg">
-                    <input type="text" id="search-input" placeholder="Zoek een film of serie..." class="flex-grow bg-gray-700 text-white placeholder-gray-400 p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <button id="search-button" class="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-md flex items-center justify-center">
-                        <i data-lucide="search" class="lucide-icon"></i>
+            <!-- Search Section -->
+            <section id="search-section" class="max-w-3xl mx-auto mb-10">
+                <div class="flex flex-col sm:flex-row gap-2 p-2 bg-gray-800 rounded-lg shadow-lg">
+                    <div class="flex-grow flex items-center bg-gray-700 rounded-md">
+                        <i data-lucide="search" class="text-gray-400 mx-3"></i>
+                        <input type="text" id="search-input" placeholder="Zoek een film, serie of anime..." class="w-full bg-transparent text-white placeholder-gray-400 p-3 focus:outline-none">
+                    </div>
+                    <select id="search-type" class="bg-gray-700 text-white p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="multi">Alles</option>
+                        <option value="movie">Films</option>
+                        <option value="tv">Series</option>
+                        <option value="anime">Anime</option>
+                        <option value="person">Personen</option>
+                    </select>
+                    <button id="search-button" class="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-md flex items-center justify-center transition-colors">
+                        <span>Zoeken</span>
                     </button>
                 </div>
-            </section>
-
-            <section id="search-results" class="mb-12">
-                <h2 class="text-2xl font-bold text-white mb-4 border-b-2 border-gray-700 pb-2 hidden" id="results-title">Resultaten</h2>
-                <div id="search-results-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                 <div class="flex items-center justify-end mt-2 pr-2 gap-4">
+                    <div>
+                        <input type="checkbox" id="include-adult-checkbox" class="h-4 w-4 bg-gray-700 border-gray-600 rounded text-blue-500 focus:ring-blue-500 cursor-pointer">
+                        <label for="include-adult-checkbox" class="ml-2 text-sm text-gray-300 cursor-pointer">Inclusief 18+ content</label>
                     </div>
+                    <div>
+                        <input type="checkbox" id="filter-added-checkbox" class="h-4 w-4 bg-gray-700 border-gray-600 rounded text-blue-500 focus:ring-blue-500 cursor-pointer">
+                        <label for="filter-added-checkbox" class="ml-2 text-sm text-gray-300 cursor-pointer">Verberg reeds toegevoegde items</label>
+                    </div>
+                </div>
             </section>
 
-            <section id="my-lists" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
-                    <h2 class="text-2xl font-bold text-white mb-4">Nog te Kijken</h2>
-                    <div id="to-watch-list-container" class="space-y-4">
-                        </div>
+            <!-- Search Results -->
+            <section id="search-results" class="mb-12 collapsible-section hidden">
+                 <div class="flex justify-between items-center mb-4 border-b-2 border-gray-700 pb-2">
+                    <div class="flex items-center gap-4">
+                        <h2 class="text-2xl font-bold text-white" id="results-title">Resultaten</h2>
+                        <select id="search-sort-by" class="bg-gray-700 text-white p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm hidden">
+                            <option value="default">Populariteit</option>
+                            <option value="date-desc">Datum (Nieuw-Oud)</option>
+                            <option value="date-asc">Datum (Oud-Nieuw)</option>
+                            <option value="alpha-asc">Alfabetisch (A-Z)</option>
+                            <option value="alpha-desc">Alfabetisch (Z-A)</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center">
+                        <button id="back-to-search-button" class="hidden text-gray-400 hover:text-white flex items-center gap-1 mr-4">
+                            <i data-lucide="arrow-left"></i> Terug
+                        </button>
+                        <button id="hide-results-button" class="text-gray-400 hover:text-white flex items-center gap-1">
+                            <i data-lucide="chevron-up"></i> Verberg
+                        </button>
+                    </div>
+                </div>
+                <div id="search-results-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-4"></div>
+            </section>
+
+            <!-- My Lists Section -->
+            <section id="my-lists">
+                <!-- Tabs -->
+                <div class="flex border-b border-gray-700 mb-6">
+                    <button data-tab="to-watch" class="tab-button flex-1 py-3 px-4 text-lg font-semibold text-white border-b-2 border-blue-500">Nog te Kijken</button>
+                    <button data-tab="watched" class="tab-button flex-1 py-3 px-4 text-lg font-semibold text-gray-400 border-b-2 border-transparent">Gezien</button>
+                    <button data-tab="favorites" class="tab-button flex-1 py-3 px-4 text-lg font-semibold text-gray-400 border-b-2 border-transparent">Favoriete Personen</button>
                 </div>
 
-                <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
-                    <h2 class="text-2xl font-bold text-white mb-4">Gezien</h2>
-                    <div id="watched-list-container" class="space-y-4">
+                <!-- Filters and List Search -->
+                <div id="list-controls" class="bg-gray-800 p-4 rounded-lg mb-6">
+                    <div id="filters-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Search -->
+                        <div id="search-filter-container" class="md:col-span-2">
+                             <label for="list-search-input" class="block text-sm font-medium text-gray-300 mb-1">Zoek op titel/notitie</label>
+                             <div class="relative">
+                                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5"></i>
+                                <input type="text" id="list-search-input" placeholder="Zoek in je lijsten..." class="w-full bg-gray-700 text-white placeholder-gray-400 p-2 pl-10 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
                         </div>
+                        <!-- Type Filter -->
+                        <div>
+                            <label for="list-filter" class="block text-sm font-medium text-gray-300 mb-1">Filter op type</label>
+                            <select id="list-filter" class="w-full bg-gray-700 text-white p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="all">Alles</option>
+                                <option value="movie">Films</option>
+                                <option value="tv">Series</option>
+                                <option value="anime">Anime</option>
+                            </select>
+                        </div>
+                        <!-- Release Date Filter -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Releasedatum</label>
+                            <div class="flex items-center gap-2">
+                                <input type="date" id="release-date-from" class="w-full bg-gray-700 text-white p-2 rounded-md">
+                                <span class="text-gray-400">tot</span>
+                                <input type="date" id="release-date-to" class="w-full bg-gray-700 text-white p-2 rounded-md">
+                            </div>
+                        </div>
+                        <!-- Status Filters -->
+                        <div id="status-filters-wrapper" class="hidden">
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label for="finished-filter" class="block text-sm font-medium text-gray-300 mb-1">Afkijkstatus</label>
+                                    <select id="finished-filter" class="w-full bg-gray-700 text-white p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        <option value="all">Alles</option>
+                                        <option value="finished">Afgekeken</option>
+                                        <option value="unfinished">Niet afgekeken</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="date-known-filter" class="block text-sm font-medium text-gray-300 mb-1">Datumstatus</label>
+                                    <select id="date-known-filter" class="w-full bg-gray-700 text-white p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        <option value="all">Alles</option>
+                                        <option value="known">Bekend</option>
+                                        <option value="unknown">Onbekend</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Watched Date Filter -->
+                        <div id="watched-date-filter-container" class="hidden">
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Gezien op datum</label>
+                            <div class="flex items-center gap-2">
+                                <input type="date" id="watched-date-from" class="w-full bg-gray-700 text-white p-2 rounded-md">
+                                <span class="text-gray-400">tot</span>
+                                <input type="date" id="watched-date-to" class="w-full bg-gray-700 text-white p-2 rounded-md">
+                            </div>
+                        </div>
+                    </div>
                 </div>
+
+                <!-- Action Buttons & View Switcher -->
+                <div class="flex justify-between items-center gap-2 sm:gap-4 mb-4">
+                    <div class="flex items-center gap-4">
+                        <div id="view-switcher" class="flex items-center bg-gray-700 rounded-md p-1">
+                            <button data-view="grid" class="p-2 text-gray-400 hover:text-white rounded-md" title="Grote pictogrammen">
+                                <i data-lucide="layout-grid" class="pointer-events-none"></i>
+                            </button>
+                            <button data-view="list" class="p-2 text-gray-400 hover:text-white rounded-md" title="Kleine pictogrammen">
+                                <i data-lucide="list" class="pointer-events-none"></i>
+                            </button>
+                            <button data-view="compact" class="p-2 text-gray-400 hover:text-white rounded-md" title="Lijst zonder pictogram">
+                                <i data-lucide="list-minus" class="pointer-events-none"></i>
+                            </button>
+                        </div>
+                        <div id="sort-container">
+                            <select id="sort-by" class="bg-gray-700 text-white p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="date-desc">Datum (Nieuw-Oud)</option>
+                                <option value="date-asc">Datum (Oud-Nieuw)</option>
+                                <option value="alpha-asc">Alfabetisch (A-Z)</option>
+                                <option value="alpha-desc">Alfabetisch (Z-A)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 sm:gap-4">
+                        <button id="export-button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition-colors flex items-center gap-2">
+                            <i data-lucide="download"></i> <span class="hidden sm:inline">Exporteren</span>
+                        </button>
+                        <label for="import-file" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded transition-colors cursor-pointer flex items-center gap-2">
+                            <i data-lucide="upload"></i> <span class="hidden sm:inline">Importeren</span>
+                        </label>
+                        <input type="file" id="import-file" accept=".json">
+                        <button id="settings-button" class="bg-gray-600 hover:bg-gray-700 text-white p-2 rounded transition-colors flex items-center" title="Instellingen / API Sleutel wijzigen">
+                            <i data-lucide="settings"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tab Content -->
+                <div id="to-watch-list" class="tab-content"></div>
+                <div id="watched-list" class="tab-content hidden"></div>
+                <div id="favorites-list" class="tab-content hidden"></div>
             </section>
         </main>
         
         <footer class="text-center mt-12 text-gray-500 text-sm">
             <p>Data aangeleverd door <a href="https://www.themoviedb.org/" target="_blank" class="text-blue-400 hover:underline">TMDb</a>.</p>
+            <p>Gaudam - 2025</p>
         </footer>
+    </div>
+
+    <!-- API Key Modal -->
+    <div id="api-key-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50 modal-transition modal-hidden">
+        <div class="bg-gray-800 rounded-lg shadow-xl p-8 max-w-md w-full">
+            <h2 class="text-2xl font-bold text-white mb-4">TMDb API Sleutel</h2>
+            <p class="text-gray-400 mb-6">Om films en series te zoeken, is een TMDb API-sleutel nodig. Deze wordt veilig opgeslagen in je browser en niet gedeeld.</p>
+            <label for="api-key-input" class="font-semibold text-white block mb-2">Voer je API v3 sleutel in:</label>
+            <input type="text" id="api-key-input" placeholder="Jouw TMDb API sleutel" class="w-full bg-gray-700 text-white p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <div class="mt-6 flex gap-4">
+                <button id="cancel-api-key-button" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 rounded-md transition-colors">
+                    Annuleren
+                </button>
+                <button id="save-api-key-button" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-md transition-colors">
+                    Opslaan
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Item Modal -->
+    <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50 modal-transition modal-hidden">
+        <div class="bg-gray-800 rounded-lg shadow-xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-white" id="edit-modal-title">Details Bewerken</h2>
+                <button id="close-edit-modal-button" class="text-gray-400 hover:text-white text-3xl leading-none">&times;</button>
+            </div>
+            <form id="edit-form">
+                <input type="hidden" id="edit-id">
+                <input type="hidden" id="edit-source-list">
+                <input type="hidden" id="edit-action">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                    <!-- Column 1 -->
+                    <div>
+                        <label for="edit-title" class="font-semibold text-white block mb-2">Titel</label>
+                        <input type="text" id="edit-title" class="w-full bg-gray-700 text-white p-2 rounded-md">
+                        
+                        <label for="edit-year" class="font-semibold text-white block mt-4 mb-2">Jaar</label>
+                        <input type="number" id="edit-year" class="w-full bg-gray-700 text-white p-2 rounded-md">
+                        
+                        <label for="edit-type" class="font-semibold text-white block mt-4 mb-2">Type</label>
+                        <select id="edit-type" class="w-full bg-gray-700 text-white p-2 rounded-md">
+                            <option value="movie">Film</option>
+                            <option value="tv">Serie</option>
+                            <option value="anime">Anime</option>
+                        </select>
+                        
+                        <div id="watched-fields-col1">
+                            <label for="edit-rating" class="font-semibold text-white block mt-4 mb-2">Beoordeling (1-10)</label>
+                            <input type="number" id="edit-rating" min="1" max="10" step="1" class="w-full bg-gray-700 text-white p-2 rounded-md">
+                        </div>
+                    </div>
+                    
+                    <!-- Column 2 -->
+                    <div>
+                        <label for="edit-notes" class="font-semibold text-white block mb-2">Notities</label>
+                        <textarea id="edit-notes" rows="4" class="w-full bg-gray-700 text-white p-2 rounded-md"></textarea>
+                        
+                        <div id="watched-fields-col2">
+                            <label for="edit-first-watched" class="font-semibold text-white block mt-4 mb-2">Eerste keer gezien</label>
+                            <input type="date" id="edit-first-watched" class="w-full bg-gray-700 text-white p-2 rounded-md">
+                            <div class="flex items-center mt-2">
+                                <input type="checkbox" id="edit-first-watched-unknown" class="h-4 w-4 bg-gray-700 border-gray-600 rounded text-blue-500 focus:ring-blue-500">
+                                <label for="edit-first-watched-unknown" class="ml-2 text-gray-400">Onbekend</label>
+                            </div>
+
+                            <label for="edit-watch-count" class="font-semibold text-white block mt-4 mb-2">Aantal keer gezien</label>
+                            <input type="number" id="edit-watch-count" min="0" class="w-full bg-gray-700 text-white p-2 rounded-md">
+                            
+                            <div class="flex items-center mt-6">
+                                <input type="checkbox" id="edit-finished" class="h-4 w-4 bg-gray-700 border-gray-600 rounded text-blue-500 focus:ring-blue-500">
+                                <label for="edit-finished" class="ml-2 text-white font-semibold">Volledig afgekeken</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8 flex justify-end gap-4">
+                    <button type="button" id="cancel-edit-button" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded">Annuleren</button>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded">Opslaan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Generic Modal (Alert/Confirm) -->
+    <div id="generic-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50 modal-transition modal-hidden">
+        <div class="bg-gray-800 rounded-lg shadow-xl p-8 max-w-md w-full">
+            <h2 id="generic-modal-title" class="text-2xl font-bold text-white mb-4"></h2>
+            <p id="generic-modal-text" class="text-gray-400 mb-6"></p>
+            <div id="generic-modal-buttons" class="flex gap-4 justify-end">
+                <!-- Buttons will be injected here -->
+            </div>
+        </div>
     </div>
 
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // --- CONFIGURATIE ---
-            // BELANGRIJK: Vervang dit met je eigen TMDb API sleutel
-            const apiKey = 'PLAK_HIER_JOUW_TMDB_API_SLEUTEL';
-            const apiUrlBase = 'https://api.themoviedb.org/3';
-            const imageUrlBase = 'https://image.tmdb.org/t/p/w500';
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- DOM ELEMENTS ---
+        const apiKeyModal = document.getElementById('api-key-modal');
+        const apiKeyInput = document.getElementById('api-key-input');
+        const saveApiKeyButton = document.getElementById('save-api-key-button');
+        const cancelApiKeyButton = document.getElementById('cancel-api-key-button');
+        const searchInput = document.getElementById('search-input');
+        const searchTypeSelect = document.getElementById('search-type');
+        const searchButton = document.getElementById('search-button');
+        const filterAddedCheckbox = document.getElementById('filter-added-checkbox');
+        const includeAdultCheckbox = document.getElementById('include-adult-checkbox');
+        const searchResultsSection = document.getElementById('search-results');
+        const searchResultsContainer = document.getElementById('search-results-container');
+        const searchSortBy = document.getElementById('search-sort-by');
+        const hideResultsButton = document.getElementById('hide-results-button');
+        const backToSearchButton = document.getElementById('back-to-search-button');
+        const toWatchListContainer = document.getElementById('to-watch-list');
+        const watchedListContainer = document.getElementById('watched-list');
+        const favoritesListContainer = document.getElementById('favorites-list');
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const listControls = document.getElementById('list-controls');
+        const filtersGrid = document.getElementById('filters-grid');
+        const searchFilterContainer = document.getElementById('search-filter-container');
+        const listFilter = document.getElementById('list-filter');
+        const listSearchInput = document.getElementById('list-search-input');
+        const statusFiltersWrapper = document.getElementById('status-filters-wrapper');
+        const finishedFilter = document.getElementById('finished-filter');
+        const dateKnownFilter = document.getElementById('date-known-filter');
+        const releaseDateFrom = document.getElementById('release-date-from');
+        const releaseDateTo = document.getElementById('release-date-to');
+        const watchedDateFilterContainer = document.getElementById('watched-date-filter-container');
+        const watchedDateFrom = document.getElementById('watched-date-from');
+        const watchedDateTo = document.getElementById('watched-date-to');
+        const exportButton = document.getElementById('export-button');
+        const importFile = document.getElementById('import-file');
+        const settingsButton = document.getElementById('settings-button');
+        const viewSwitcher = document.getElementById('view-switcher');
+        const sortBySelect = document.getElementById('sort-by');
+        const sortContainer = document.getElementById('sort-container');
+        const editModal = document.getElementById('edit-modal');
+        const editForm = document.getElementById('edit-form');
+        const closeEditModalButton = document.getElementById('close-edit-modal-button');
+        const cancelEditButton = document.getElementById('cancel-edit-button');
+        const genericModal = document.getElementById('generic-modal');
 
-            // --- STATE ---
-            let state = {
-                toWatchList: [],
-                watchedList: [],
-            };
+        // --- CONFIG & STATE ---
+        const API_URL_BASE = 'https://api.themoviedb.org/3';
+        const IMAGE_URL_BASE = 'https://image.tmdb.org/t/p/w500';
+        let apiKey = '';
+        let lastSearchResults = [];
+        let lastSearchTypeBeforeDrilldown = '';
+        let currentSearchResults = [];
+        let unfilteredCurrentSearchResults = [];
+        let lastSearchType = 'multi';
+        let state = {
+            toWatch: [],
+            watched: [],
+            favorites: [],
+            settings: {
+                view: 'list' // 'list', 'grid', 'compact'
+            }
+        };
 
-            // --- LOCALSTORAGE FUNCTIES ---
-            const saveState = () => {
-                localStorage.setItem('movieWatchlistState', JSON.stringify(state));
-            };
+        // --- UTILITY FUNCTIONS ---
+        const getYear = (dateString) => dateString ? dateString.split('-')[0] : 'Onbekend';
+        const formatRuntime = (minutes) => {
+            if (!minutes || minutes <= 0) return '';
+            const hours = Math.floor(minutes / 60);
+            const mins = minutes % 60;
+            let result = '';
+            if (hours > 0) result += `${hours}u `;
+            if (mins > 0) result += `${mins}m`;
+            return result.trim();
+        };
+        const showModal = (modal) => {
+            modal.classList.remove('modal-hidden');
+            modal.classList.add('modal-visible');
+        };
+        const hideModal = (modal) => {
+            modal.classList.add('modal-hidden');
+            modal.classList.remove('modal-visible');
+        };
+        const isAnime = (item) => {
+            // Heuristic to detect anime: Japanese language and Animation genre (ID 16)
+            const animationGenreId = 16;
+            return item.original_language === 'ja' && item.genre_ids && item.genre_ids.includes(animationGenreId);
+        };
+        
+        const showGenericModal = (title, text, buttons) => {
+            genericModal.querySelector('#generic-modal-title').textContent = title;
+            genericModal.querySelector('#generic-modal-text').textContent = text;
+            const buttonsContainer = genericModal.querySelector('#generic-modal-buttons');
+            buttonsContainer.innerHTML = '';
+            buttons.forEach(btn => {
+                const buttonEl = document.createElement('button');
+                buttonEl.textContent = btn.text;
+                buttonEl.className = btn.class;
+                buttonEl.addEventListener('click', () => {
+                    hideModal(genericModal);
+                    if (btn.onClick) {
+                        btn.onClick();
+                    }
+                });
+                buttonsContainer.appendChild(buttonEl);
+            });
+            showModal(genericModal);
+        };
 
-            const loadState = () => {
-                const savedStateJSON = localStorage.getItem('movieWatchlistState');
-                if (savedStateJSON) {
-                    state = JSON.parse(savedStateJSON);
-                } else {
-                    // Voorbeelddata als de gebruiker nieuw is
-                    state = {
-                        toWatchList: [{ id: 550, title: 'Fight Club', poster_path: '/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg', release_date: '1999-10-15' }],
-                        watchedList: [{ id: 680, title: 'Pulp Fiction', poster_path: '/d5iIlFn5s0ImszYzBPb8JPIfbXD.jpg', release_date: '1994-09-10', rating: 5 }]
-                    };
+        const showAlert = (title, text) => {
+            showGenericModal(title, text, [
+                { text: 'OK', class: 'w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded' }
+            ]);
+        };
+
+        const showConfirm = (title, text, onConfirm) => {
+            showGenericModal(title, text, [
+                { text: 'Annuleren', class: 'bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded' },
+                { text: 'Bevestigen', class: 'bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded', onClick: onConfirm }
+            ]);
+        };
+
+
+        // --- LOCALSTORAGE & DATA HANDLING ---
+        const saveState = () => {
+            try {
+                localStorage.setItem('movieWatchlistState_v11', JSON.stringify(state));
+            } catch (e) {
+                console.error("Error saving state to localStorage", e);
+                showAlert("Opslagfout", "Kon de gegevens niet opslaan. Mogelijk is de opslag vol.");
+            }
+        };
+
+        const loadState = () => {
+            const savedStateJSON = localStorage.getItem('movieWatchlistState_v11');
+            if (savedStateJSON) {
+                const loadedState = JSON.parse(savedStateJSON);
+                if (!loadedState.settings) {
+                    loadedState.settings = { view: 'list' };
                 }
-            };
-
-            // --- DOM ELEMENTEN ---
-            const searchInput = document.getElementById('search-input');
-            const searchButton = document.getElementById('search-button');
-            const searchResultsContainer = document.getElementById('search-results-container');
-            const resultsTitle = document.getElementById('results-title');
-            const toWatchListContainer = document.getElementById('to-watch-list-container');
-            const watchedListContainer = document.getElementById('watched-list-container');
-
-            // --- API FUNCTIES ---
-            const searchApi = async (query) => {
-                if (!query) return;
-                if (apiKey === 'PLAK_HIER_JOUW_TMDB_API_SLEUTEL') {
-                    alert('Voeg eerst je TMDb API sleutel toe aan de code!');
-                    return;
+                if (!loadedState.favorites) {
+                    loadedState.favorites = [];
                 }
-                const url = `${apiUrlBase}/search/movie?api_key=${apiKey}&query=${encodeURIComponent(query)}&language=nl-NL&include_adult=false`;
+                state = loadedState;
+            }
+        };
+
+        const loadApiKey = () => {
+            apiKey = localStorage.getItem('tmdbApiKey');
+            if (!apiKey) {
+                showModal(apiKeyModal);
+            }
+        };
+        
+        const saveApiKey = () => {
+            if (apiKeyInput.value.trim()) {
+                apiKey = apiKeyInput.value.trim();
+                localStorage.setItem('tmdbApiKey', apiKey);
+                hideModal(apiKeyModal);
+            } else {
+                showAlert("Ongeldige Sleutel", "Voer een geldige API sleutel in.");
+            }
+        };
+
+        // --- API FUNCTIONS ---
+        const fetchDetails = async (id, mediaType) => {
+            if (!apiKey) {
+                showModal(apiKeyModal);
+                return null;
+            }
+            const url = `${API_URL_BASE}/${mediaType}/${id}?api_key=${apiKey}&language=en-US`;
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return await response.json();
+            } catch (error) {
+                console.error(`Fout bij het ophalen van details voor ${mediaType} ${id}:`, error);
+                showAlert("Ophaalfout", "Kon de details voor dit item niet ophalen.");
+                return null;
+            }
+        };
+
+        const searchApi = async () => {
+            const query = searchInput.value.trim();
+            let type = searchTypeSelect.value;
+            lastSearchType = type;
+            if (!query) return;
+            if (!apiKey) {
+                showModal(apiKeyModal);
+                return;
+            }
+
+            searchResultsSection.classList.remove('hidden');
+            searchResultsContainer.innerHTML = `<p class="text-gray-400 col-span-full">Bezig met zoeken...</p>`;
+            backToSearchButton.classList.add('hidden');
+            lastSearchResults = [];
+            
+            let searchUrlType = (type === 'anime') ? 'tv' : type;
+            const includeAdult = includeAdultCheckbox.checked;
+            const url = `${API_URL_BASE}/search/${searchUrlType}?api_key=${apiKey}&query=${encodeURIComponent(query)}&language=en-US&include_adult=${includeAdult}`;
+
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                let data = await response.json();
+
+                if (type === 'anime') {
+                    data.results = data.results.filter(isAnime);
+                }
                 
-                try {
-                    const response = await fetch(url);
-                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                    const data = await response.json();
-                    renderSearchResults(data.results);
-                } catch (error) {
-                    console.error("Fout bij het ophalen van zoekresultaten:", error);
-                    searchResultsContainer.innerHTML = `<p class="text-red-400">Kon de zoekresultaten niet laden. Controleer je API-sleutel en internetverbinding.</p>`;
-                }
-            };
+                unfilteredCurrentSearchResults = [...data.results];
+                let resultsToRender = unfilteredCurrentSearchResults;
 
-            // --- RENDER FUNCTIES ---
-            const renderSearchResults = (results) => {
-                searchResultsContainer.innerHTML = '';
-                if (results.length > 0) {
-                    resultsTitle.classList.remove('hidden');
-                } else {
-                    resultsTitle.classList.add('hidden');
-                    searchResultsContainer.innerHTML = `<p class="text-gray-400">Geen resultaten gevonden.</p>`;
-                    return;
+                if (filterAddedCheckbox.checked) {
+                    if (type === 'person') {
+                        const favoriteIds = new Set(state.favorites.map(p => p.id));
+                        resultsToRender = resultsToRender.filter(person => !favoriteIds.has(person.id));
+                    } else {
+                        const allAddedIds = new Set([...state.toWatch.map(i => i.id), ...state.watched.map(i => i.id)]);
+                        resultsToRender = resultsToRender.filter(item => !allAddedIds.has(item.id));
+                    }
                 }
 
-                results.forEach(movie => {
-                    const movieCard = `
-                        <div class="bg-gray-800 rounded-lg overflow-hidden shadow-lg flex flex-col">
-                            <img src="${movie.poster_path ? imageUrlBase + movie.poster_path : 'https://via.placeholder.com/500x750?text=Geen+Poster'}" alt="Poster van ${movie.title}" class="w-full h-auto object-cover">
-                            <div class="p-4 flex flex-col flex-grow">
-                                <h3 class="font-bold text-white text-lg">${movie.title}</h3>
-                                <p class="text-gray-400 text-sm mb-4">${movie.release_date ? movie.release_date.split('-')[0] : 'Onbekend'}</p>
-                                <div class="mt-auto">
-                                    <button data-movie-id="${movie.id}" data-action="add-to-watch" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition-colors">
-                                        Toevoegen
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                    searchResultsContainer.innerHTML += movieCard;
-                });
-            };
+                currentSearchResults = resultsToRender;
+                renderSearchResults(currentSearchResults, type);
+            } catch (error) {
+                console.error("Fout bij het ophalen van zoekresultaten:", error);
+                searchResultsContainer.innerHTML = `<p class="text-red-400 col-span-full">Kon de zoekresultaten niet laden. Controleer je API-sleutel en internetverbinding.</p>`;
+            }
+        };
 
-            const renderLists = () => {
-                saveState();
-                toWatchListContainer.innerHTML = '';
-                watchedListContainer.innerHTML = '';
-
-                if(state.toWatchList.length === 0) toWatchListContainer.innerHTML = `<p class="text-gray-500">Je 'nog te kijken'-lijst is leeg.</p>`;
-                if(state.watchedList.length === 0) watchedListContainer.innerHTML = `<p class="text-gray-500">Je hebt nog niets als 'gezien' gemarkeerd.</p>`;
-
-                state.toWatchList.forEach(movie => {
-                    toWatchListContainer.innerHTML += createListCard(movie, 'toWatch');
-                });
-                state.watchedList.forEach(movie => {
-                    watchedListContainer.innerHTML += createListCard(movie, 'watched');
-                });
+        const fetchPersonCredits = async (personId) => {
+            lastSearchResults = [...currentSearchResults];
+            lastSearchTypeBeforeDrilldown = 'person';
+            const url = `${API_URL_BASE}/person/${personId}/combined_credits?api_key=${apiKey}&language=en-US`;
+            searchResultsContainer.innerHTML = `<p class="text-gray-400 col-span-full">Bezig met laden...</p>`;
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const data = await response.json();
                 
-                lucide.createIcons();
-            };
+                unfilteredCurrentSearchResults = [...data.cast];
+                let resultsToRender = unfilteredCurrentSearchResults;
 
-            const createListCard = (movie, listType) => {
-                const year = movie.release_date ? movie.release_date.split('-')[0] : 'Onbekend';
-                const buttons = listType === 'toWatch' ? `
-                    <button data-movie-id="${movie.id}" data-action="move-to-watched" class="p-2 text-green-400 hover:text-green-300" title="Markeer als gezien">
-                        <i data-lucide="check-circle" class="lucide-icon"></i>
-                    </button>
-                ` : `
-                    <div class="flex items-center text-yellow-400" title="Jouw score">
-                        <i data-lucide="star" class="lucide-icon fill-current"></i>
-                        <span class="ml-1 font-bold">${movie.rating || '?'}</span>
+                if (filterAddedCheckbox.checked) {
+                    const allAddedIds = new Set([...state.toWatch.map(i => i.id), ...state.watched.map(i => i.id)]);
+                    resultsToRender = resultsToRender.filter(item => !allAddedIds.has(item.id));
+                }
+                currentSearchResults = resultsToRender;
+                lastSearchType = 'multi';
+                renderSearchResults(currentSearchResults, 'multi');
+                backToSearchButton.classList.remove('hidden');
+            } catch (error) {
+                console.error("Fout bij het ophalen van credits:", error);
+                searchResultsContainer.innerHTML = `<p class="text-red-400 col-span-full">Kon de filmografie niet laden.</p>`;
+            }
+        };
+
+        const fetchMediaCredits = async (mediaId, mediaType) => {
+            lastSearchResults = [...currentSearchResults];
+            lastSearchTypeBeforeDrilldown = lastSearchType;
+            
+            const isTvLike = mediaType === 'tv' || mediaType === 'anime';
+            const endpoint = isTvLike ? 'aggregate_credits' : 'credits';
+            const apiMediaType = isTvLike ? 'tv' : 'movie';
+
+            const url = `${API_URL_BASE}/${apiMediaType}/${mediaId}/${endpoint}?api_key=${apiKey}&language=en-US`;
+            searchResultsContainer.innerHTML = `<p class="text-gray-400 col-span-full">Bezig met laden...</p>`;
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const data = await response.json();
+
+                unfilteredCurrentSearchResults = [...data.cast];
+                let resultsToRender = unfilteredCurrentSearchResults;
+
+                if (filterAddedCheckbox.checked) {
+                    const favoriteIds = new Set(state.favorites.map(p => p.id));
+                    resultsToRender = resultsToRender.filter(person => !favoriteIds.has(person.id));
+                }
+
+                currentSearchResults = resultsToRender;
+                lastSearchType = 'person';
+                renderSearchResults(currentSearchResults, 'person');
+                backToSearchButton.classList.remove('hidden');
+                searchResultsSection.classList.remove('hidden');
+                searchResultsSection.scrollIntoView({ behavior: 'smooth' });
+            } catch (error) {
+                console.error("Fout bij het ophalen van credits:", error);
+                searchResultsContainer.innerHTML = `<p class="text-red-400 col-span-full">Kon de cast niet laden.</p>`;
+            }
+        };
+
+
+        // --- RENDER FUNCTIONS ---
+        const renderSearchResults = (results, type) => {
+            searchResultsContainer.innerHTML = '';
+            
+            if (results && results.length > 0) {
+                searchSortBy.classList.remove('hidden');
+            } else {
+                searchSortBy.classList.add('hidden');
+                searchResultsContainer.innerHTML = `<p class="text-gray-400 col-span-full">Geen resultaten gevonden.</p>`;
+                return;
+            }
+            
+            let sortedResults = [...results];
+            const sortBy = searchSortBy.value;
+
+            switch (sortBy) {
+                case 'alpha-asc':
+                    sortedResults.sort((a, b) => (a.title || a.name || '').localeCompare(b.title || b.name || ''));
+                    break;
+                case 'alpha-desc':
+                    sortedResults.sort((a, b) => (b.title || b.name || '').localeCompare(a.title || a.name || ''));
+                    break;
+                case 'date-asc':
+                    sortedResults.sort((a, b) => new Date(a.release_date || a.first_air_date || '1900-01-01') - new Date(b.release_date || b.first_air_date || '1900-01-01'));
+                    break;
+                case 'date-desc':
+                    sortedResults.sort((a, b) => new Date(b.release_date || b.first_air_date || '1900-01-01') - new Date(a.release_date || a.first_air_date || '1900-01-01'));
+                    break;
+                case 'default':
+                     // API returns by popularity by default, so no need to re-sort
+                    break;
+            }
+
+
+            sortedResults.forEach(item => {
+                let card;
+                if (type === 'person') {
+                    card = createPersonCard(item);
+                } else {
+                    card = createMediaCard(item);
+                }
+                if(card) searchResultsContainer.appendChild(card);
+            });
+        };
+
+        const createPersonCard = (person) => {
+            const isFavorite = state.favorites.some(p => p.id === person.id);
+            const character = person.character || (person.roles && person.roles[0] ? person.roles[0].character : '');
+            const card = document.createElement('div');
+            card.className = "bg-gray-800 rounded-lg overflow-hidden shadow-lg flex flex-col";
+            card.innerHTML = `
+                <img src="${person.profile_path ? IMAGE_URL_BASE + person.profile_path : 'https://placehold.co/500x750/1f2937/e5e7eb?text=Geen+Foto'}" alt="Foto van ${person.name}" class="w-full h-auto object-cover cursor-pointer" data-person-id="${person.id}">
+                <div class="p-4 flex flex-col flex-grow">
+                    <h3 class="font-bold text-white text-lg cursor-pointer" data-person-id="${person.id}">${person.name}</h3>
+                    ${character ? `<p class="text-sm text-gray-400">${character}</p>` : ''}
+                    <div class="mt-auto pt-2">
+                         <button data-id="${person.id}" data-action="add-to-favorites" class="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-2 px-4 rounded transition-colors disabled:bg-gray-500" ${isFavorite ? 'disabled' : ''}>
+                            ${isFavorite ? 'Favoriet' : 'Voeg toe'}
+                        </button>
                     </div>
-                `;
+                </div>
+            `;
+            return card;
+        };
 
-                return `
-                    <div class="bg-gray-700 p-3 rounded-md flex items-center gap-4">
-                        <img src="${movie.poster_path ? imageUrlBase + movie.poster_path : 'https://via.placeholder.com/50x75?text=N/A'}" class="w-12 h-auto rounded-sm">
-                        <div class="flex-grow">
-                            <h4 class="font-semibold text-white">${movie.title}</h4>
-                            <p class="text-sm text-gray-400">${year}</p>
+        const createMediaCard = (item) => {
+            let mediaType = item.media_type || searchTypeSelect.value;
+            if(mediaType === 'multi') mediaType = item.title ? 'movie' : 'tv';
+            if (isAnime(item)) mediaType = 'anime';
+
+            if (mediaType !== 'movie' && mediaType !== 'tv' && mediaType !== 'anime') return null;
+
+            const title = item.title || item.name;
+            const releaseDate = item.release_date || item.first_air_date;
+            const isAdded = state.toWatch.some(m => m.id === item.id) || state.watched.some(m => m.id === item.id);
+
+            const card = document.createElement('div');
+            card.className = "bg-gray-800 rounded-lg overflow-hidden shadow-lg flex flex-col";
+            card.innerHTML = `
+                <img src="${item.poster_path ? IMAGE_URL_BASE + item.poster_path : 'https://placehold.co/500x750/1f2937/e5e7eb?text=Geen+Poster'}" alt="Poster van ${title}" class="w-full h-auto object-cover cursor-pointer" data-media-id="${item.id}" data-media-type="${mediaType}">
+                <div class="p-4 flex flex-col flex-grow">
+                    <h3 class="font-bold text-white text-lg">${title}</h3>
+                    <p class="text-gray-400 text-sm mb-4">${getYear(releaseDate)}</p>
+                    <div class="mt-auto">
+                        <button data-id="${item.id}" data-type="${mediaType}" data-action="add-to-watch" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition-colors disabled:bg-gray-500" ${isAdded ? 'disabled' : ''}>
+                            ${isAdded ? 'Toegevoegd' : 'Toevoegen'}
+                        </button>
+                    </div>
+                </div>
+            `;
+            return card;
+        };
+        
+        const renderAllLists = () => {
+            renderLists();
+            renderFavorites();
+        }
+
+        const renderLists = () => {
+            saveState();
+            const typeFilterValue = listFilter.value;
+            const searchTerm = listSearchInput.value.toLowerCase();
+            const finishedFilterValue = finishedFilter.value;
+            const dateKnownFilterValue = dateKnownFilter.value;
+            const releaseFrom = releaseDateFrom.value;
+            const releaseTo = releaseDateTo.value;
+            const watchedFrom = watchedDateFrom.value;
+            const watchedTo = watchedDateTo.value;
+            const sortBy = sortBySelect.value;
+
+            const renderList = (container, list, listName) => {
+                container.innerHTML = '';
+                let filteredList = list
+                    .filter(item => typeFilterValue === 'all' || (item.user_type || item.type) === typeFilterValue)
+                    .filter(item => {
+                        if (!searchTerm) return true;
+                        const title = (item.title || item.name).toLowerCase();
+                        const notes = (item.notes || '').toLowerCase();
+                        return title.includes(searchTerm) || notes.includes(searchTerm);
+                    })
+                    .filter(item => {
+                        if (!releaseFrom && !releaseTo) return true;
+                        const date = item.release_date || item.first_air_date;
+                        if (!date) return false;
+                        const fromOk = !releaseFrom || date >= releaseFrom;
+                        const toOk = !releaseTo || date <= releaseTo;
+                        return fromOk && toOk;
+                    });
+                
+                if (listName === 'watched') {
+                    filteredList = filteredList
+                        .filter(item => {
+                            if (finishedFilterValue === 'all') return true;
+                            const isFinished = item.watchedData?.finished === true;
+                            return (finishedFilterValue === 'finished') ? isFinished : !isFinished;
+                        })
+                        .filter(item => {
+                            if (dateKnownFilterValue === 'all') return true;
+                            const isDateUnknown = item.watchedData?.firstWatchedOn === 'unknown' || !item.watchedData?.firstWatchedOn;
+                            return (dateKnownFilterValue === 'unknown') ? isDateUnknown : !isDateUnknown;
+                        })
+                        .filter(item => {
+                            if (!watchedFrom && !watchedTo) return true;
+                            const date = item.watchedData?.firstWatchedOn;
+                            if (!date || date === 'unknown') return false;
+                            const fromOk = !watchedFrom || date >= watchedFrom;
+                            const toOk = !watchedTo || date <= watchedTo;
+                            return fromOk && toOk;
+                        });
+                }
+                
+                // Sorting logic
+                switch (sortBy) {
+                    case 'alpha-asc':
+                        filteredList.sort((a, b) => (a.title || a.name).localeCompare(b.title || b.name));
+                        break;
+                    case 'alpha-desc':
+                        filteredList.sort((a, b) => (b.title || b.name).localeCompare(a.title || a.name));
+                        break;
+                    case 'date-asc':
+                        filteredList.sort((a, b) => new Date(a.release_date || a.first_air_date) - new Date(b.release_date || b.first_air_date));
+                        break;
+                    case 'date-desc':
+                        filteredList.sort((a, b) => new Date(b.release_date || b.first_air_date) - new Date(a.release_date || a.first_air_date));
+                        break;
+                }
+
+                if (filteredList.length === 0) {
+                    container.innerHTML = `<p class="text-gray-500">Geen items gevonden die aan je criteria voldoen.</p>`;
+                    return;
+                }
+
+                filteredList.forEach(item => {
+                    container.appendChild(createListCard(item, listName));
+                });
+            };
+
+            renderList(toWatchListContainer, state.toWatch, 'toWatch');
+            renderList(watchedListContainer, state.watched, 'watched');
+            
+            lucide.createIcons();
+        };
+
+        const createListCard = (item, listType) => {
+            const title = item.title || item.name;
+            const year = getYear(item.release_date || item.first_air_date);
+            const isWatched = listType === 'watched';
+            const itemType = item.user_type || item.type;
+            
+            const typeLabels = { movie: 'Film', tv: 'Serie', anime: 'Anime' };
+            
+            let buttons = `
+                <button data-id="${item.id}" data-list="${listType}" data-action="edit" class="p-2 text-blue-400 hover:text-blue-300" title="Bewerken">
+                    <i data-lucide="pencil" class="w-5 h-5"></i>
+                </button>
+                <button data-id="${item.id}" data-type="${itemType}" data-action="move-to-watched" class="p-2 text-green-400 hover:text-green-300" title="Markeer als gezien">
+                    <i data-lucide="check-circle" class="w-5 h-5"></i>
+                </button>
+                <button data-id="${item.id}" data-list="${listType}" data-action="delete" class="p-2 text-red-400 hover:text-red-300" title="Verwijderen">
+                    <i data-lucide="trash-2" class="w-5 h-5"></i>
+                </button>
+            `;
+
+            let watchedInfo = '';
+            if (isWatched) {
+                const wd = item.watchedData || {};
+                const rating = wd.rating ? `<span class="flex items-center text-yellow-400" title="Jouw score"><i data-lucide="star" class="w-4 h-4 fill-current mr-1"></i>${wd.rating}/10</span>` : '';
+                const watchCount = wd.watchCount > 1 ? `<span class="flex items-center text-gray-400" title="Aantal keer gezien"><i data-lucide="repeat" class="w-4 h-4 mr-1"></i>x${wd.watchCount}</span>` : '';
+                const finished = wd.finished ? `<span class="flex items-center text-green-400" title="Afgekeken"><i data-lucide="check" class="w-4 h-4 mr-1"></i></span>` : `<span class="flex items-center text-yellow-500" title="Niet afgekeken"><i data-lucide="x" class="w-4 h-4 mr-1"></i></span>`;
+
+                watchedInfo = `<div class="flex items-center flex-wrap gap-x-3 gap-y-1 mt-1 text-sm">${rating}${watchCount}${finished}</div>`;
+                buttons = `
+                    <button data-id="${item.id}" data-list="${listType}" data-action="move-to-to-watch" class="p-2 text-yellow-400 hover:text-yellow-300" title="Terugzetten naar 'Nog te kijken'">
+                        <i data-lucide="rewind" class="w-5 h-5"></i>
+                    </button>
+                    <button data-id="${item.id}" data-list="${listType}" data-action="edit" class="p-2 text-blue-400 hover:text-blue-300" title="Bewerken">
+                        <i data-lucide="pencil" class="w-5 h-5"></i>
+                    </button>
+                    <button data-id="${item.id}" data-list="${listType}" data-action="delete" class="p-2 text-red-400 hover:text-red-300" title="Verwijderen">
+                        <i data-lucide="trash-2" class="w-5 h-5"></i>
+                    </button>
+                `;
+            }
+
+            const card = document.createElement('div');
+            card.className = "list-item bg-gray-800 rounded-lg shadow";
+            card.innerHTML = `
+                <img src="${item.poster_path ? IMAGE_URL_BASE + item.poster_path : 'https://placehold.co/80x120/1f2937/e5e7eb?text=N/A'}" class="list-item-image rounded-l-lg cursor-pointer" data-media-id="${item.id}" data-media-type="${itemType}">
+                <div class="list-item-content flex-grow flex">
+                    <div class="list-item-details flex-grow">
+                        <h4 class="font-semibold text-white cursor-pointer" data-media-id="${item.id}" data-media-type="${itemType}">${title} <span class="text-sm font-normal text-gray-400">(${year})</span></h4>
+                        <div class="flex items-center gap-x-3 text-sm text-gray-400">
+                           <span class="text-blue-300 font-semibold">${typeLabels[itemType] || 'Onbekend'}</span>
+                           ${item.runtime ? `<span class="flex items-center"><i data-lucide="clock" class="inline w-4 h-4 mr-1"></i>${formatRuntime(item.runtime)}</span>` : ''}
                         </div>
-                        <div class="flex items-center gap-2">
-                            ${buttons}
-                            <button data-movie-id="${movie.id}" data-action="delete" data-list-type="${listType}" class="p-2 text-red-400 hover:text-red-300" title="Verwijderen">
-                                <i data-lucide="trash-2" class="lucide-icon"></i>
+                        ${item.notes ? `<p class="text-xs text-gray-400 mt-1 italic line-clamp-2" title="${item.notes}">Notitie: ${item.notes}</p>` : ''}
+                        ${watchedInfo}
+                    </div>
+                    <div class="list-item-actions flex flex-col sm:flex-row items-center gap-1">
+                        ${buttons}
+                    </div>
+                </div>
+            `;
+            return card;
+        };
+
+        const renderFavorites = () => {
+            favoritesListContainer.innerHTML = '';
+            if (state.favorites.length === 0) {
+                favoritesListContainer.innerHTML = `<p class="text-gray-500">Je hebt nog geen favoriete personen toegevoegd.</p>`;
+                return;
+            }
+            const favGrid = document.createElement('div');
+            favGrid.className = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-4";
+            
+            state.favorites.forEach(person => {
+                const card = document.createElement('div');
+                card.className = "bg-gray-800 rounded-lg overflow-hidden shadow-lg flex flex-col";
+                card.innerHTML = `
+                    <img src="${person.profile_path ? IMAGE_URL_BASE + person.profile_path : 'https://placehold.co/500x750/1f2937/e5e7eb?text=Geen+Foto'}" alt="Foto van ${person.name}" class="w-full h-auto object-cover cursor-pointer" data-person-id="${person.id}">
+                    <div class="p-3 flex flex-col flex-grow">
+                        <h3 class="font-bold text-white text-md cursor-pointer" data-person-id="${person.id}">${person.name}</h3>
+                        <div class="mt-auto pt-2">
+                            <button data-id="${person.id}" data-action="remove-favorite" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 text-sm rounded transition-colors">
+                                Verwijder
                             </button>
                         </div>
                     </div>
                 `;
-            };
-
-            // --- EVENT LISTENERS ---
-            searchButton.addEventListener('click', () => searchApi(searchInput.value));
-            searchInput.addEventListener('keyup', (e) => {
-                if (e.key === 'Enter') {
-                    searchApi(searchInput.value);
-                }
+                favGrid.appendChild(card);
             });
+            favoritesListContainer.appendChild(favGrid);
+        };
 
-            searchResultsContainer.addEventListener('click', async (e) => {
-                const button = e.target.closest('button[data-action="add-to-watch"]');
-                if (!button) return;
-
-                const movieId = parseInt(button.dataset.movieId);
-                if (state.toWatchList.some(m => m.id === movieId) || state.watchedList.some(m => m.id === movieId)) {
-                    alert('Deze film staat al op een van je lijsten.');
-                    return;
-                }
-
-                // Haal volledige filmdetails op om op te slaan
-                const url = `${apiUrlBase}/movie/${movieId}?api_key=${apiKey}&language=nl-NL`;
-                try {
-                    const response = await fetch(url);
-                    const movieData = await response.json();
-                    state.toWatchList.unshift(movieData); // Voeg vooraan toe
-                    renderLists();
-                    // Wis zoekresultaten voor een schone interface
-                    searchResultsContainer.innerHTML = '';
-                    resultsTitle.classList.add('hidden');
-                    searchInput.value = '';
-                } catch(error) {
-                    console.error("Kon filmdetails niet ophalen:", error);
-                    alert("Er ging iets mis met het toevoegen van de film.");
-                }
-            });
-
-            document.getElementById('my-lists').addEventListener('click', (e) => {
-                const button = e.target.closest('button');
-                if (!button) return;
-                
-                const action = button.dataset.action;
-                const movieId = parseInt(button.dataset.movieId);
-
-                if (action === 'delete') {
-                    const listType = button.dataset.listType;
-                    state[listType + 'List'] = state[listType + 'List'].filter(m => m.id !== movieId);
-                }
-                
-                if (action === 'move-to-watched') {
-                    const movieIndex = state.toWatchList.findIndex(m => m.id === movieId);
-                    if (movieIndex > -1) {
-                        const movie = state.toWatchList.splice(movieIndex, 1)[0];
-                        
-                        // Vraag om een beoordeling
-                        const rating = prompt(`Welke score (1-5) geef je ${movie.title}?`, '5');
-                        movie.rating = parseInt(rating) || 5; // Standaard een 5 als input ongeldig is
-                        
-                        state.watchedList.unshift(movie);
-                    }
-                }
-
-                renderLists();
-            });
-
-            // --- INITIALISATIE ---
-            loadState();
-            renderLists();
-            lucide.createIcons();
+        // --- EVENT HANDLERS ---
+        saveApiKeyButton.addEventListener('click', saveApiKey);
+        cancelApiKeyButton.addEventListener('click', () => hideModal(apiKeyModal));
+        searchButton.addEventListener('click', searchApi);
+        searchInput.addEventListener('keyup', (e) => e.key === 'Enter' && searchApi());
+        
+        searchSortBy.addEventListener('input', () => {
+            renderSearchResults(currentSearchResults, lastSearchType);
         });
+
+        filterAddedCheckbox.addEventListener('change', () => {
+            let resultsToRender = [...unfilteredCurrentSearchResults];
+            if (filterAddedCheckbox.checked) {
+                if (lastSearchType === 'person') {
+                    const favoriteIds = new Set(state.favorites.map(p => p.id));
+                    resultsToRender = resultsToRender.filter(person => !favoriteIds.has(person.id));
+                } else { // 'multi', 'movie', 'tv', 'anime'
+                    const allAddedIds = new Set([...state.toWatch.map(i => i.id), ...state.watched.map(i => i.id)]);
+                    resultsToRender = resultsToRender.filter(item => !allAddedIds.has(item.id));
+                }
+            }
+            currentSearchResults = resultsToRender;
+            renderSearchResults(currentSearchResults, lastSearchType);
+        });
+        
+        includeAdultCheckbox.addEventListener('change', () => {
+            if (searchInput.value.trim()) {
+                searchApi();
+            }
+        });
+
+        hideResultsButton.addEventListener('click', () => searchResultsSection.classList.add('hidden'));
+        settingsButton.addEventListener('click', () => showModal(apiKeyModal));
+        
+        backToSearchButton.addEventListener('click', () => {
+            currentSearchResults = [...lastSearchResults];
+            renderSearchResults(currentSearchResults, lastSearchTypeBeforeDrilldown);
+            lastSearchResults = [];
+            lastSearchTypeBeforeDrilldown = '';
+            backToSearchButton.classList.add('hidden');
+        });
+
+        searchResultsContainer.addEventListener('click', async (e) => {
+            const mediaIdentifier = e.target.closest('[data-media-id]');
+            if (mediaIdentifier) {
+                fetchMediaCredits(mediaIdentifier.dataset.mediaId, mediaIdentifier.dataset.mediaType);
+                return;
+            }
+
+            const personIdentifier = e.target.closest('[data-person-id]');
+            if (personIdentifier) {
+                fetchPersonCredits(personIdentifier.dataset.personId);
+                return;
+            }
+
+            const button = e.target.closest('button');
+            if (!button) return;
+            
+            const action = button.dataset.action;
+            const id = parseInt(button.dataset.id);
+
+            if (action === 'add-to-watch') {
+                 if (button.disabled) return;
+                const type = button.dataset.type;
+                button.disabled = true;
+                button.textContent = 'Toegevoegd';
+
+                const details = await fetchDetails(id, type === 'anime' ? 'tv' : type);
+                if (details) {
+                    const runtime = details.runtime || (details.episode_run_time && details.episode_run_time[0]) || 0;
+                    const itemToAdd = { 
+                        ...details, 
+                        runtime: runtime,
+                        user_type: type,
+                        notes: '',
+                        watchedData: null
+                    };
+                    state.toWatch.unshift(itemToAdd);
+                    renderAllLists();
+                    if (filterAddedCheckbox.checked) {
+                        button.closest('.bg-gray-800').remove();
+                    }
+                } else {
+                    showAlert("Fout", "Er ging iets mis met het toevoegen van het item.");
+                    button.disabled = false;
+                    button.textContent = 'Toevoegen';
+                }
+            } else if (action === 'add-to-favorites') {
+                if (button.disabled) return;
+                const person = unfilteredCurrentSearchResults.find(p => p.id === id);
+                if (person && !state.favorites.some(p => p.id === id)) {
+                    state.favorites.push(person);
+                    button.disabled = true;
+                    button.textContent = 'Favoriet';
+                    renderFavorites();
+                    saveState();
+                }
+            }
+        });
+
+        document.getElementById('my-lists').addEventListener('click', (e) => {
+            const button = e.target.closest('button');
+            const mediaIdentifier = e.target.closest('[data-media-id]');
+
+            if (mediaIdentifier && !button) {
+                const mediaId = mediaIdentifier.dataset.mediaId;
+                const mediaType = mediaIdentifier.dataset.mediaType;
+                fetchMediaCredits(mediaId, mediaType);
+                return;
+            }
+
+            if (!button) return;
+
+            const action = button.dataset.action;
+            const id = parseInt(button.dataset.id);
+            
+            if (action === 'delete') {
+                showConfirm("Item verwijderen", "Weet je zeker dat je dit item wilt verwijderen?", () => {
+                    const listName = button.dataset.list;
+                    state[listName] = state[listName].filter(m => m.id !== id);
+                    renderLists();
+                });
+            }
+
+            if (action === 'move-to-watched') {
+                const itemIndex = state.toWatch.findIndex(m => m.id === id);
+                if (itemIndex > -1) {
+                    const item = state.toWatch[itemIndex];
+                    openEditModal(item, 'toWatch', action);
+                }
+            }
+            
+            if (action === 'move-to-to-watch') {
+                const itemIndex = state.watched.findIndex(m => m.id === id);
+                if (itemIndex > -1) {
+                    const item = state.watched.splice(itemIndex, 1)[0];
+                    item.watchedData = null; // Reset watched data
+                    state.toWatch.unshift(item);
+                    renderLists();
+                }
+            }
+
+            if (action === 'edit') {
+                const listName = button.dataset.list;
+                const item = state[listName].find(m => m.id === id);
+                openEditModal(item, listName, action);
+            }
+        });
+        
+        favoritesListContainer.addEventListener('click', (e) => {
+            const personIdentifier = e.target.closest('[data-person-id]');
+            if (personIdentifier) {
+                fetchPersonCredits(personIdentifier.dataset.personId);
+                return;
+            }
+            
+            const button = e.target.closest('button[data-action="remove-favorite"]');
+            if(button) {
+                const id = parseInt(button.dataset.id);
+                state.favorites = state.favorites.filter(p => p.id !== id);
+                renderFavorites();
+                saveState();
+            }
+        });
+
+        const openEditModal = (item, sourceList, action) => {
+            const isMovingToWatched = action === 'move-to-watched';
+            const isEditingWatched = sourceList === 'watched';
+            const watchedData = item.watchedData || {};
+
+            // Populate form
+            editForm.querySelector('#edit-id').value = item.id;
+            editForm.querySelector('#edit-source-list').value = sourceList;
+            editForm.querySelector('#edit-action').value = action;
+            editForm.querySelector('#edit-title').value = item.title || item.name;
+            editForm.querySelector('#edit-year').value = getYear(item.release_date || item.first_air_date);
+            editForm.querySelector('#edit-type').value = item.user_type || item.type;
+            editForm.querySelector('#edit-notes').value = item.notes || '';
+            
+            // Show/hide watched-specific fields
+            const watchedFields1 = editForm.querySelector('#watched-fields-col1');
+            const watchedFields2 = editForm.querySelector('#watched-fields-col2');
+            const showWatchedFields = isEditingWatched || isMovingToWatched;
+            
+            [watchedFields1, watchedFields2].forEach(el => el.style.display = showWatchedFields ? 'block' : 'none');
+
+            if (showWatchedFields) {
+                editForm.querySelector('#edit-rating').value = watchedData.rating || '';
+                editForm.querySelector('#edit-watch-count').value = watchedData.watchCount || (isMovingToWatched ? 1 : 0);
+                editForm.querySelector('#edit-finished').checked = watchedData.finished === undefined ? true : watchedData.finished;
+                
+                const firstWatchedInput = editForm.querySelector('#edit-first-watched');
+                const unknownCheckbox = editForm.querySelector('#edit-first-watched-unknown');
+                
+                if (watchedData.firstWatchedOn === 'unknown') {
+                    firstWatchedInput.value = '';
+                    firstWatchedInput.disabled = true;
+                    unknownCheckbox.checked = true;
+                } else {
+                    firstWatchedInput.value = watchedData.firstWatchedOn || new Date().toISOString().split('T')[0];
+                    firstWatchedInput.disabled = false;
+                    unknownCheckbox.checked = false;
+                }
+            }
+            
+            showModal(editModal);
+        };
+
+        editForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const id = parseInt(editForm.querySelector('#edit-id').value);
+            const sourceList = editForm.querySelector('#edit-source-list').value;
+            const action = editForm.querySelector('#edit-action').value;
+
+            let itemIndex = state[sourceList].findIndex(i => i.id === id);
+            if (itemIndex === -1) {
+                console.error("Item not found in state");
+                hideModal(editModal);
+                return;
+            }
+
+            const item = state[sourceList][itemIndex];
+            
+            // Update item with form data
+            item.title = editForm.querySelector('#edit-title').value;
+            item.user_type = editForm.querySelector('#edit-type').value;
+            item.notes = editForm.querySelector('#edit-notes').value;
+            
+            const isMovingToWatched = action === 'move-to-watched';
+            const isEditingWatched = sourceList === 'watched';
+
+            if (isMovingToWatched || isEditingWatched) {
+                item.watchedData = {
+                    rating: parseInt(editForm.querySelector('#edit-rating').value) || null,
+                    watchCount: parseInt(editForm.querySelector('#edit-watch-count').value) || 1,
+                    finished: editForm.querySelector('#edit-finished').checked,
+                    firstWatchedOn: editForm.querySelector('#edit-first-watched-unknown').checked ? 'unknown' : editForm.querySelector('#edit-first-watched').value
+                };
+            }
+
+            if (isMovingToWatched) {
+                state.toWatch.splice(itemIndex, 1);
+                state.watched.unshift(item);
+            }
+
+            renderLists();
+            hideModal(editModal);
+        });
+
+        editForm.querySelector('#edit-first-watched-unknown').addEventListener('change', (e) => {
+            editForm.querySelector('#edit-first-watched').disabled = e.target.checked;
+        });
+        
+        closeEditModalButton.addEventListener('click', () => hideModal(editModal));
+        cancelEditButton.addEventListener('click', () => hideModal(editModal));
+
+        tabButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                const targetTab = e.currentTarget.dataset.tab;
+
+                tabButtons.forEach(btn => {
+                    btn.classList.replace('text-white', 'text-gray-400');
+                    btn.classList.replace('border-blue-500', 'border-transparent');
+                });
+
+                e.currentTarget.classList.replace('text-gray-400', 'text-white');
+                e.currentTarget.classList.replace('border-transparent', 'border-blue-500');
+                
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.add('hidden');
+                });
+                document.getElementById(`${targetTab}-list`).classList.remove('hidden');
+
+                if (targetTab === 'favorites') {
+                    listControls.classList.add('hidden');
+                    sortContainer.classList.add('hidden');
+                } else {
+                    listControls.classList.remove('hidden');
+                    sortContainer.classList.remove('hidden');
+                }
+
+                if (targetTab === 'watched') {
+                    statusFiltersWrapper.classList.remove('hidden');
+                    watchedDateFilterContainer.classList.remove('hidden');
+                } else {
+                    statusFiltersWrapper.classList.add('hidden');
+                    watchedDateFilterContainer.classList.add('hidden');
+                }
+            });
+        });
+        
+        const applyViewMode = () => {
+            const view = state.settings.view;
+            viewSwitcher.querySelectorAll('button').forEach(btn => {
+                if (btn.dataset.view === view) {
+                    btn.classList.add('bg-blue-600', 'text-white');
+                    btn.classList.remove('text-gray-400');
+                } else {
+                    btn.classList.remove('bg-blue-600', 'text-white');
+                    btn.classList.add('text-gray-400');
+                }
+            });
+
+            [toWatchListContainer, watchedListContainer].forEach(container => {
+                container.classList.remove('view-list', 'view-grid', 'view-compact');
+                container.classList.add(`view-${view}`);
+            });
+            renderLists();
+        };
+
+        viewSwitcher.addEventListener('click', (e) => {
+            const button = e.target.closest('button[data-view]');
+            if (button) {
+                state.settings.view = button.dataset.view;
+                applyViewMode();
+                saveState();
+            }
+        });
+
+        [listFilter, listSearchInput, finishedFilter, dateKnownFilter, releaseDateFrom, releaseDateTo, watchedDateFrom, watchedDateTo, sortBySelect].forEach(el => {
+            el.addEventListener('input', renderLists);
+        });
+
+        // --- IMPORT/EXPORT ---
+        exportButton.addEventListener('click', () => {
+            const dataToExport = {
+                apiKey: localStorage.getItem('tmdbApiKey'),
+                state: state
+            };
+            const dataStr = JSON.stringify(dataToExport, null, 2);
+            const blob = new Blob([dataStr], {type: "application/json"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `kijklijst_backup_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+
+        importFile.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (importedData.apiKey && importedData.state) {
+                        showConfirm("Gegevens Importeren", "Weet je zeker dat je de huidige gegevens wilt overschrijven? Dit kan niet ongedaan worden gemaakt.", () => {
+                            localStorage.setItem('tmdbApiKey', importedData.apiKey);
+                            apiKey = importedData.apiKey;
+                            state = importedData.state;
+                            applyViewMode();
+                            renderFavorites();
+                            showAlert("Succes", "Gegevens succesvol geïmporteerd!");
+                        });
+                    } else { throw new Error("Ongeldig bestandsformaat."); }
+                } catch (err) {
+                    console.error("Fout bij importeren:", err);
+                    showAlert("Importeren Mislukt", "Zorg ervoor dat het een geldig backup-bestand is.");
+                } finally {
+                    importFile.value = '';
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        // --- INITIALIZATION ---
+        loadApiKey();
+        loadState();
+        applyViewMode();
+        renderFavorites();
+        lucide.createIcons();
+    });
     </script>
 </body>
 </html>
